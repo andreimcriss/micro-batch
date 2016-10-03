@@ -11,8 +11,8 @@ resolvers += "Spark Packages Repo" at "http://dl.bintray.com/spark-packages/mave
 
 
 
-libraryDependencies += "org.apache.spark" %% "spark-core_2.11" % "2.0.0"
-libraryDependencies += "org.apache.spark" % "spark-sql_2.11" % "2.0.0"
-libraryDependencies += "org.apache.spark" % "spark-streaming_2.11" % "2.0.0"
+libraryDependencies += "org.apache.spark" %% "spark-core" % "2.0.0"
+libraryDependencies += "org.apache.spark" %% "spark-sql" % "2.0.0"
+libraryDependencies += "org.apache.spark" %% "spark-streaming" % "2.0.0"
 
 
