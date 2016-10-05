@@ -4,6 +4,7 @@ import java.util.TimerTask
 import java.util.Timer
 import scala.util.control.NonFatal
 import scala.collection.mutable.ArrayBuffer
+import org.apache.spark.sql.functions.{col, lit, when}
 
 object microBatch{
 
