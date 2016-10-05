@@ -30,7 +30,7 @@ object microBatch{
             try {
             val clean_input_data = raw_input_data.filter("_corrupt_record is null").select("output_table","source_stream_path","stream_type","select","where","filter","groupBy","agg","count")
           } catch {
-            case NonFatal(t) => val clean_input_data = raw_input_data
+            val clean_input_data = raw_input_data
           }
         //test if there are any records remaining, if not kill program
           if (!clean_input_data.columns.contains("output_table")) {
