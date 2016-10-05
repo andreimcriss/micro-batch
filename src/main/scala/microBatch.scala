@@ -17,7 +17,7 @@ object microBatch{
       System.exit(1)
     }
 
-        val Array(batchinterval,input_file) = args
+        val Array(batchinterval, input_file) = args
         val batch_time = batchinterval.toInt*1000
 
         val spark = SparkSession.builder().master("yarn").appName("microbatch").config("spark.sql.warehouse.dir","hdfs:///user/hive/warehouse/").enableHiveSupport().getOrCreate()
