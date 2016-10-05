@@ -37,7 +37,7 @@ object microBatch{
         //test if there are any records remaining, if not kill program
           if (!clean_input_data.columns.contains("output_table")) {
             Console.println("No valid data is present in the input file: "+input_file)
-            exit()
+            spark.stop()
           }
 
         // make a DataSet with all the paths and get the number:
