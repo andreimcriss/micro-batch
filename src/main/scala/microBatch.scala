@@ -45,7 +45,7 @@ object microBatch{
           val nb_of_paths = all_paths.count
         // create empty structures for the stream session and result_queries  
           val stream_session_array = new ArrayBuffer[(org.apache.spark.sql.DataFrame,String)]()
-          val result_queries_array = new ArrayBuffer[org.apache.spark.sql.DataFrame,String]()
+          val result_queries_array = new ArrayBuffer[(org.apache.spark.sql.DataFrame,String)]()
           val streaming_queries_array = new ArrayBuffer[org.apache.spark.sql.streaming.StreamingQuery]()
         //loop through the paths DataSet
         all_paths.collect().foreach(input_path => {
