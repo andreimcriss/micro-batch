@@ -26,12 +26,14 @@ object microBatch{
 
         //read input File
           val raw_input_data = spark.read.json(input_file)
+          val clean_input_data = raw_input_data
         //test if there are any corrupt records and eliminate them
             try {
             val clean_input_data = raw_input_data.filter("_corrupt_record is null").select("output_table","source_stream_path","stream_type","select","where","filter","groupBy","agg","count")
           } catch {
-            val clean_input_data = raw_input_data
+            case NonFatal(t) => val clean_input_data = raw_input_data
           }
+
         //test if there are any records remaining, if not kill program
           if (!clean_input_data.columns.contains("output_table")) {
             Console.println("No valid data is present in the input file: "+input_file)
