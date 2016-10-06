@@ -71,15 +71,20 @@ object microBatch{
 
                                                                     if(line(4).toString() == "") {
                                                                       if(line(6).toString() == "null") {
-                                                                        result_queries_array.append((current_stream._1.select(line(1).toString()).where(line(2).toString()).filter(line(3).toString()),line(0).toString())) 
+                                                                        current_stream._1.select(line(1).toString()).where(line(2).toString()).filter(line(3).toString()
+                                                                        //result_queries_array.append((current_stream._1.select(line(1).toString()).where(line(2).toString()).filter(line(3).toString()),line(0).toString())) 
                                                                       } else {
-                                                                        result_queries_array.append((current_stream._1.select(line(1).toString()).where(line(2).toString()).filter(line(3).toString()).count(),line(0).toString()))
+                                                                        //result_queries_array.append((current_stream._1.select(line(1).toString()).where(line(2).toString()).filter(line(3).toString()).count(),line(0).toString()))
+                                                                        current_stream._1.select(line(1).toString()).where(line(2).toString()).filter(line(3).toString()).count()
                                                                       }
                                                                     } else {
                                                                       if(line(5).toString() == "null") {
-                                                                        result_queries_array.append((current_stream._1.select(line(1).toString()).where(line(2).toString()).filter(line(3).toString()).groupBy(line(4).toString()).count(),line(0).toString()))
+                                                                        
+                                                                        //result_queries_array.append((current_stream._1.select(line(1).toString()).where(line(2).toString()).filter(line(3).toString()).groupBy(line(4).toString()).count(),line(0).toString()))
+                                                                        current_stream._1.select(line(1).toString()).where(line(2).toString()).filter(line(3).toString()).groupBy(line(4).toString()).count()
                                                                       } else {
-                                                                        result_queries_array.append((current_stream._1.select(line(1).toString()).where(line(2).toString()).filter(line(3).toString).groupBy(line(4).toString).agg(line(5).toString()),line(0).toString()))
+                                                                        //result_queries_array.append((current_stream._1.select(line(1).toString()).where(line(2).toString()).filter(line(3).toString).groupBy(line(4).toString).agg(line(5).toString()),line(0).toString()))
+                                                                        current_stream._1.select(line(1).toString()).where(line(2).toString()).filter(line(3).toString).groupBy(line(4).toString).agg(line(5).toString())
                                                                       }
                                                                     }
 
