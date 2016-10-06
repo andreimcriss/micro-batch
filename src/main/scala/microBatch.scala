@@ -7,7 +7,7 @@ import java.util.Timer
 object microBatch{
 
   def main(args: Array[String]): Unit = {
-   if (args.length != 1) {
+   if (args.length != 2) {
       System.err.println(s"""
         |Usage: microBatch <microbatch_interval> <application_name>
         |  <microbatch_interval> is the amount of time in seconds between two succesive runs of the job
