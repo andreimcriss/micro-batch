@@ -71,7 +71,7 @@ object microBatch{
 
                                                                     if(line(4).toString() == "") {
                                                                       if(line(6).toString() == "null") {
-                                                                        current_stream._1.select(line(1).toString()).where(line(2).toString()).filter(line(3).toString()
+                                                                        current_stream._1.select(line(1).toString()).where(line(2).toString()).filter(line(3).toString())
                                                                         //result_queries_array.append((current_stream._1.select(line(1).toString()).where(line(2).toString()).filter(line(3).toString()),line(0).toString())) 
                                                                       } else {
                                                                         //result_queries_array.append((current_stream._1.select(line(1).toString()).where(line(2).toString()).filter(line(3).toString()).count(),line(0).toString()))
