@@ -2,137 +2,99 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.SparkConf
 import java.util.TimerTask
 import java.util.Timer
-import scala.util.control.NonFatal
-import scala.collection.mutable.ArrayBuffer
-import org.apache.spark.sql.functions.{col, lit, when}
 
 object microBatch{
 
   def main(args: Array[String]): Unit = {
-   if (args.length != 2) {
+   if (args.length != 1) {
       System.err.println(s"""
-        |Usage: microBatch <microbatch_interval> <input_file>
+        |Usage: microBatch <microbatch_interval> <application_name>
         |  <microbatch_interval> is the amount of time in seconds between two succesive runs of the job
-        |  <input_file> File in JSON format. Should contain on each line:  source_stream_path, stream_type(parquet or json), query, output_table
+        |  <application_name> is the name of the application as it will appear in YARN. It will be prefixed with "microbatch"
                 """.stripMargin)
       System.exit(1)
     }
+        //read arguments
+        val Array(micro_time,app_name) = args
+        val batch_interval = micro_time.toInt*1000
 
-        val Array(batchinterval, input_file) = args
-        val batch_time = batchinterval.toInt*1000
-
-        val spark = SparkSession.builder().master("yarn").appName("microbatch").config("spark.sql.warehouse.dir","hdfs:///user/hive/warehouse/").enableHiveSupport().getOrCreate()
+        //intialize Spark Session
+        val spark = SparkSession.builder().master("yarn").appName("microbatch"+app_name).config("spark.sql.warehouse.dir","hdfs:///user/hive/warehouse/").enableHiveSupport().getOrCreate()
         spark.conf.set("spark.executor.memory", "5g")
         spark.conf.set("spark.rdd.compress","true")
 
-        //read input File
-          val raw_input_data = spark.read.json(input_file)
-          val clean_input_data = raw_input_data
-        //test if there are any corrupt records and eliminate them
-            try {
-            val clean_input_data = raw_input_data.filter("_corrupt_record is null").select("output_table","source_stream_path","stream_type","select","where","filter","groupBy","agg","count")
-          } catch {
-            case NonFatal(t) => val clean_input_data = raw_input_data
-          }
-
-        //test if there are any records remaining, if not kill program
-          if (!clean_input_data.columns.contains("output_table")) {
-            Console.println("No valid data is present in the input file: "+input_file)
-            spark.stop()
-          }
-
-        // make a DataSet with all the paths and get the number:
-          val all_paths = clean_input_data.select("source_stream_path").dropDuplicates()
-          val nb_of_paths = all_paths.count
-        // create empty structures for the stream session and result_queries  
-          val stream_session_array = new ArrayBuffer[(org.apache.spark.sql.DataFrame,String)]()
-          val result_queries_array = new ArrayBuffer[(org.apache.spark.sql.DataFrame,String)]()
-          val streaming_queries_array = new ArrayBuffer[org.apache.spark.sql.streaming.StreamingQuery]()
-        //loop through the paths DataSet
-        all_paths.collect().foreach(input_path => {
-                                                    //load schema
-                                                    val source_schema = spark.read.load(input_path.mkString).schema
-                                                    //read source_format
-                                                    val source_format = clean_input_data.filter(col("source_stream_path").like(input_path.mkString)).limit(1).select("stream_type").collect().mkString.stripPrefix("[").stripSuffix("]").trim
-                                                    //readStream depending on format
-                                                    if(source_format == "parquet") {
-                                                      stream_session_array.append((spark.readStream.schema(source_schema).parquet(input_path.mkString),input_path.mkString))
-                                                    }
-                                                    if(source_format == "json") {
-                                                      stream_session_array.append((spark.readStream.json(input_path.mkString),input_path.mkString))
-                                                    }
-                                                    })
-        //take each stream and launch the queries
-        stream_session_array.foreach(current_stream => {
-                                                          //use the location path to filter initial json
-                                                          val queries_tables = clean_input_data.filter(col("source_stream_path").like(current_stream._2)).select("output_table","select","where","filter","groupBy","agg","count").dropDuplicates
-                                                          //interate over values
-                                                          queries_tables.collect().foreach(line => {
-
-                                                                    if(line(4).toString() == "") {
-                                                                      if(line(6).toString() == "null") {
-                                                                        current_stream._1.select(line(1).toString()).where(line(2).toString()).filter(line(3).toString())
-                                                                        //result_queries_array.append((current_stream._1.select(line(1).toString()).where(line(2).toString()).filter(line(3).toString()),line(0).toString())) 
-                                                                      } else {
-                                                                        //result_queries_array.append((current_stream._1.select(line(1).toString()).where(line(2).toString()).filter(line(3).toString()).count(),line(0).toString()))
-                                                                        current_stream._1.select(line(1).toString()).where(line(2).toString()).filter(line(3).toString()).count()
-                                                                      }
-                                                                    } else {
-                                                                      if(line(5).toString() == "null") {
-                                                                        
-                                                                        //result_queries_array.append((current_stream._1.select(line(1).toString()).where(line(2).toString()).filter(line(3).toString()).groupBy(line(4).toString()).count(),line(0).toString()))
-                                                                        current_stream._1.select(line(1).toString()).where(line(2).toString()).filter(line(3).toString()).groupBy(line(4).toString()).count()
-                                                                      } else {
-                                                                        //result_queries_array.append((current_stream._1.select(line(1).toString()).where(line(2).toString()).filter(line(3).toString).groupBy(line(4).toString).agg(line(5).toString()),line(0).toString()))
-                                                                        current_stream._1.select(line(1).toString()).where(line(2).toString()).filter(line(3).toString()).groupBy(line(4).toString()) //.agg(line(5).toString())
-                                                                      }
-                                                                    }
-
-                                                          })
-                                                         
-
-                                                    
-        })
-      result_queries_array.foreach(current_query => { 
-                                                        //start streams
-                                                        streaming_queries_array.append(current_query._1.writeStream.outputMode("complete").format("memory").queryName(current_query._2+"_memory").start())
-
-        })
-
-      val timer = new Timer("Rewrite Tables", true)
-      timer.schedule(new TimerTask{
-                override def run() {
-                        result_queries_array.foreach(current_query => {
-                        spark.sql("SELECT * FROM "+current_query._2+"_memory").write.format("parquet").mode("overwrite").saveAsTable(current_query._2)
-                
-                })
-                }
-        }, batch_time, batch_time)
         
+        //For each StreamPath, read schema and initialize stream with .readStream
 
+        //Stream 1
+        val path_1 = "hdfs:///kafka_raw_stream/generic/generic"
+        val source_schema_1 = spark.read.load(path_1).schema
+        val stream_session_1 = spark.readStream.schema(source_schema_1).parquet(path_1)
 
-//This part can be used to integrate manually other streams for more complicated queries
-    //    val source_schema = spark.read.load(source_location).schema
-    //    val stream_session = spark.readStream.schema(source_schema).parquet(source_location)
+        //Stream 2
+        val path_2 = "hdfs:///kafka_test_generic_consumer/mkt_products/schema-version-1"
+        val source_schema_2 = spark.read.load(path_2).schema
+        val stream_session_2 = spark.readStream.schema(source_schema_2).parquet(path_2)
 
-        //insert query here using stream_session dataframe
+        //Stream n
+        //val path_n = "hdfs:///"
+        //val source_schema_n = spark.read.load(path_n).schema
+        //val stream_session_n = spark.readStream.schema(source_schema_n).parquet(path_n)
 
-    //    val result_query = stream_session.select("customers_city").groupBy("customers_city").count()
+        //create queries for each created stream
+        //For Stream 1
+        val result_query_1_1 = stream_session_1.select("@table").groupBy("@table").count()
+        val result_query_1_2 = stream_session_1.groupBy("furnizor").count()
 
-        //write to memory table
-    //    val write_query = result_query.writeStream.outputMode("complete").format("memory").queryName("test_micro_sparksubmit").start()
+        //For Stream 2
+        val result_query_2_1 = stream_session_2.select("@table").groupBy("@table").count()
+        val result_query_2_2 = stream_session_2.groupBy("furnizor").count()
+        val result_query_2_3 = stream_session_2.groupBy("@update").count().sort($"count".desc)
 
+        //For Stream n
+        //val result_query_n_1 = .........
+        //val result_query_n_2 = .........
+        //val result_query_n_n = .........
 
-//val write_query = result_query.writeStream.outputMode("complete").format("console").queryName("test_micro_sparksubmit").start()
+        //Write Each Query to a Memory Table
+        //For Stream 1
+        val write_query_1_1 = result_query_1_1.writeStream.outputMode("complete").format("memory").queryName("mem_table_1_1").start()
+        val write_query_1_2 = result_query_1_2.writeStream.outputMode("complete").format("memory").queryName("mem_table_1_2").start()
 
-      //  val timer = new Timer("rewrite table", true)
-      //  timer.schedule(new TimerTask{
-      //          override def run() {
-      //                  spark.sql("SELECT * FROM test_micro_sparksubmit").write.format("parquet").mode("overwrite").saveAsTable("microbatch_table")
-      //          }
-      //  }, 30000, 15000)
+        //For Stream 2
+        val write_query_2_1 = result_query_2_1.writeStream.outputMode("complete").format("memory").queryName("mem_table_2_1").start()
+        val write_query_2_2 = result_query_2_2.writeStream.outputMode("complete").format("memory").queryName("mem_table_2_2").start()
+        val write_query_2_3 = result_query_2_3.writeStream.outputMode("complete").format("memory").queryName("mem_table_2_3").start()
 
-      //  write_query.awaitTermination()
+        //For Stream n
+        //val write_query_n_1 = result_query_n_1.writeStream.outputMode("complete").format("memory").queryName("mem_table_n_1").start()
+        //val write_query_n_2 = result_query_n_2.writeStream.outputMode("complete").format("memory").queryName("mem_table_n_2").start()
+        //val write_query_n_n = result_query_n_n.writeStream.outputMode("complete").format("memory").queryName("mem_table_n_n").start()
+
+        //Spark Session can also output to console. Example below:
+        //val write_query = result_query.writeStream.outputMode("complete").format("console").queryName("test_micro_sparksubmit").start()
+
+        //Write Memory Tables to Physical SparkSQL tables periodically
+        val selectall_query = "SELECT * FROM "
+        val timer = new Timer("Rewrite Table", true)
+        timer.schedule(new TimerTask{
+                override def run() {
+                        //Stream 1
+                        spark.sql(selectall_query+"mem_table_1_1").write.format("parquet").mode("overwrite").saveAsTable("spark_sql_table_1_1")
+                        spark.sql(selectall_query+"mem_table_1_2").write.format("parquet").mode("overwrite").saveAsTable("spark_sql_table_1_2")
+                        //Stream 2
+                        spark.sql(selectall_query+"mem_table_2_1").write.format("parquet").mode("overwrite").saveAsTable("spark_sql_table_2_1")
+                        spark.sql(selectall_query+"mem_table_2_2").write.format("parquet").mode("overwrite").saveAsTable("spark_sql_table_2_2")
+                        spark.sql(selectall_query+"mem_table_2_3").write.format("parquet").mode("overwrite").saveAsTable("spark_sql_table_2_3")
+
+                        //Stream n
+                        //spark.sql(selectall_query+"mem_table_n_1").write.format("parquet").mode("overwrite").saveAsTable("spark_sql_table_n_1")
+                        //spark.sql(selectall_query+"mem_table_n_2").write.format("parquet").mode("overwrite").saveAsTable("spark_sql_table_n_2")
+                        //spark.sql(selectall_query+"mem_table_n_n").write.format("parquet").mode("overwrite").saveAsTable("spark_sql_table_n_n")
+                }
+        }, batch_interval, batch_interval)
+
+        write_query.awaitTermination()
         }
 
 }
