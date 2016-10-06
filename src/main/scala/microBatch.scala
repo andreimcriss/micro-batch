@@ -73,13 +73,13 @@ object microBatch{
                                                                       if(line(6).toString() == "0") {
                                                                         result_queries_array.append((current_stream._1.select(line(1).toString()).where(line(2).toString()).filter(line(3).toString()),line(0).toString())) 
                                                                       } else {
-                                                                        result_queries_array.append((current_stream._1.select(line(1)).where(line(2)).filter(line(3).count()),line(0)))
+                                                                        result_queries_array.append((current_stream._1.select(line(1).toString()).where(line(2).toString()).filter(line(3).toString()).count()),line(0).toString()))
                                                                       }
                                                                     } else {
-                                                                      if(line(5) == "0") {
-                                                                        result_queries_array.append((current_stream._1.select(line(1)).where(line(2)).filter(line(3).groupBy(line(4)).count()),line(0)))
+                                                                      if(line(5).toString() == "0") {
+                                                                        result_queries_array.append((current_stream._1.select(line(1).toString()).where(line(2).toString()).filter(line(3).toString()).groupBy(line(4).toString()).count()),line(0).toString()))
                                                                       } else {
-                                                                        result_queries_array.append((current_stream._1.select(line(1)).where(line(2)).filter(line(3).groupBy(line(4)).agg(line(5))),line(0)))
+                                                                        result_queries_array.append((current_stream._1.select(line(1).toString()).where(line(2).toString()).filter(line(3).toString).groupBy(line(4).toString).agg(line(5).toString())),line(0).toString()))
                                                                       }
                                                                     }
 
