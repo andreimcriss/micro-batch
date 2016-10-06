@@ -70,8 +70,8 @@ object microBatch{
                                                           queries_tables.collect().foreach(line => {
 
                                                                     if(line(4).toString() == "") {
-                                                                      if(line(6).mkString == "0") {
-                                                                        result_queries_array.append((current_stream._1.select(line(1).mkString).where(line(2).mkString).filter(line(3).mkString),line(0).mkString)) 
+                                                                      if(line(6).toString() == "0") {
+                                                                        result_queries_array.append((current_stream._1.select(line(1).toString()).where(line(2).toString()).filter(line(3).toString()),line(0).toString())) 
                                                                       } else {
                                                                         result_queries_array.append((current_stream._1.select(line(1)).where(line(2)).filter(line(3).count()),line(0)))
                                                                       }
