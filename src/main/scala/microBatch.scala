@@ -69,9 +69,9 @@ object microBatch{
                                                           //interate over values
                                                           queries_tables.collect().foreach(line => {
 
-                                                                    if(line(4) == "") {
-                                                                      if(line(6) == "0") {
-                                                                        result_queries_array.append((current_stream._1.select(line(1)).where(line(2)).filter(line(3)),line(0))) 
+                                                                    if(line(4).mkString == "") {
+                                                                      if(line(6).mkString == "0") {
+                                                                        result_queries_array.append((current_stream._1.select(line(1).mkString).where(line(2).mkString).filter(line(3).mkString),line(0).mkString)) 
                                                                       } else {
                                                                         result_queries_array.append((current_stream._1.select(line(1)).where(line(2)).filter(line(3).count()),line(0)))
                                                                       }
