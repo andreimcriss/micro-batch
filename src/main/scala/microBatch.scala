@@ -84,7 +84,7 @@ object microBatch{
                                                                         current_stream._1.select(line(1).toString()).where(line(2).toString()).filter(line(3).toString()).groupBy(line(4).toString()).count()
                                                                       } else {
                                                                         //result_queries_array.append((current_stream._1.select(line(1).toString()).where(line(2).toString()).filter(line(3).toString).groupBy(line(4).toString).agg(line(5).toString()),line(0).toString()))
-                                                                        current_stream._1.select(line(1).toString()).where(line(2).toString()).filter(line(3).toString).groupBy(line(4).toString).agg(line(5).toString())
+                                                                        current_stream._1.select(line(1).toString()).where(line(2).toString()).filter(line(3).toString()).groupBy(line(4).toString()).agg(line(5).toString())
                                                                       }
                                                                     }
 
