@@ -94,7 +94,19 @@ object microBatch{
                 }
         }, batch_interval, batch_interval)
 
-        write_query.awaitTermination()
+        //Await Termination For all queries
+
+        //Stream 1
+        write_query_1_1.awaitTermination()
+        write_query_1_2.awaitTermination()
+        //Stream 2
+        write_query_1_1.awaitTermination()
+        write_query_2_2.awaitTermination()
+        write_query_2_3.awaitTermination()
+        //Stream n
+        //write_query_n_1.awaitTermination()
+        //write_query_n_2.awaitTermination()
+        //write_query_n_n.awaitTermination()
         }
 
 }
