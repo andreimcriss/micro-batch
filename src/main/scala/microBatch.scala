@@ -1,5 +1,6 @@
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.SparkConf
+import org.apache.spark.sql.functions._
 import java.util.TimerTask
 import java.util.Timer
 
@@ -49,7 +50,7 @@ object microBatch{
         //For Stream 2
         val result_query_2_1 = stream_session_2.select("@table").groupBy("@table").count()
         val result_query_2_2 = stream_session_2.groupBy("furnizor").count()
-        val result_query_2_3 = stream_session_2.groupBy("@update").count().sort($"count".desc)
+        val result_query_2_3 = stream_session_2.groupBy("@update").count().sort(col("count").desc)
 
         //For Stream n
         //val result_query_n_1 = .........
